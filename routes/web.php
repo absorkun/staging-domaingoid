@@ -1,7 +1,6 @@
 <?php
 
+use App\Http\Controllers\DomainReportController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/', DomainReportController::class)->name('domains.index');
