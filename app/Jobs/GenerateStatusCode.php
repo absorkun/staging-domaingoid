@@ -2,58 +2,27 @@
 
 namespace App\Jobs;
 
-use App\Models\Domain;
-use Exception;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Foundation\Queue\Queueable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
-use Throwable;
 
-class GenerateStatusCode implements ShouldQueue
+class GenerateStatusCode extends AbstractGenerateDomainBatch
 {
-    use Queueable, Dispatchable, InteractsWithQueue, SerializesModels;
-
-    /**
-     * Create a new job instance.
-     */
-    public function __construct()
+    protected static function batchName(): string
     {
-        //
+        return 'Generate status code';
     }
 
-    /**
-     * Execute the job.
-     */
-    public function handle(): void
+    protected static function dispatchedLogMessage(): string
     {
-        Domain::query()
-            ->select(['id', 'name', 'zone'])
-            ->orderBy('id')
-            ->chunkById(100, function ($domains) {
-                foreach ($domains as $domain) {
-                    try {
-                        if (empty($domain->hostname)) {
-                            Log::warning('[Status Code Fetch] hostname kosong, skip domain: ' . $domain->id);
-                            return;
-                        }
+        return '[Status Code Fetch] batch dispatched';
+    }
 
-                        $response = Http::timeout(10)
-                            ->head("http://{$domain->hostname}");
+    protected static function emptyLogMessage(): string
+    {
+        return '[Status Code Fetch] tidak ada domain untuk diproses';
+    }
 
-                        $domain->update([
-                            'status_code' => $response->status(),
-                        ]);
-
-                        Log::info("[Status Code Fetch] {$domain->hostname} : " . $response->status()); // ✅ Log sukses
-    
-                    } catch (Throwable $e) {
-                        Log::error("[Status Code Fetch] {$domain->hostname} : " . $e->getMessage());
-                    }
-                }
-            });
+    protected static function makeChunkJob(int $startId, int $endId): ShouldQueue
+    {
+        return new ProcessStatusCodeChunk($startId, $endId);
     }
 }

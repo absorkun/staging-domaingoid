@@ -18,11 +18,11 @@ class Domain extends Model
     protected $casts = [
         'dns_sec' => 'boolean',
         'domain_name_server' => 'array',
-        'ip_address' => 'array',
+        'ip_address' => 'string',
     ];
 
     public function getHostnameAttribute(): string
     {
-        return $this->name . $this->zone;
+        return $this->name.$this->zone;
     }
 }

@@ -28,13 +28,25 @@ class GenerateAllFieldsFromCmd extends Command
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(): int
     {
-        Bus::chain([
-            new GenerateNameserver(),
-            new GenerateDNSSEC(),
-            new GenerateIpAddress(),
-            new GenerateStatusCode(),
-        ])->dispatch();
+        $chain = array_values(array_filter([
+            GenerateNameserver::makeBatch(),
+            GenerateDNSSEC::makeBatch(),
+            GenerateIpAddress::makeBatch(),
+            GenerateStatusCode::makeBatch(),
+        ]));
+
+        if ($chain === []) {
+            $this->warn('Tidak ada domain untuk diproses.');
+
+            return self::SUCCESS;
+        }
+
+        Bus::chain($chain)->dispatch();
+
+        $this->info('Seluruh batch berhasil didaftarkan ke queue.');
+
+        return self::SUCCESS;
     }
 }
